@@ -1,6 +1,6 @@
 import unittest
 
-from markdown import split_nodes_delimiter, extract_markdown_images, extract_markdown_links, split_nodes_image, split_nodes_link
+from markdown import split_nodes_delimiter, extract_markdown_images, extract_markdown_links, split_nodes_image, split_nodes_link, text_to_textnodes
 from textnode import TextNode, TextType
 
 class TestHTMLNode(unittest.TestCase):
@@ -137,6 +137,47 @@ class TestHTMLNode(unittest.TestCase):
                 ),
             ]
         actual = split_nodes_image([node])
+        self.assertListEqual(expected, actual)
+
+    def test_text_to_textnodes(self):
+        text = 'This is **text** with an _italic_ word and a `code block` and an ![obi wan image](https://i.imgur.com/fJRm4Vk.jpeg) and a [link](https://boot.dev)'
+        expected = [
+            TextNode("This is ", TextType.TEXT),
+            TextNode("text", TextType.BOLD),
+            TextNode(" with an ", TextType.TEXT),
+            TextNode("italic", TextType.ITALIC),
+            TextNode(" word and a ", TextType.TEXT),
+            TextNode("code block", TextType.CODE),
+            TextNode(" and an ", TextType.TEXT),
+            TextNode("obi wan image", TextType.IMAGE, "https://i.imgur.com/fJRm4Vk.jpeg"),
+            TextNode(" and a ", TextType.TEXT),
+            TextNode("link", TextType.LINK, "https://boot.dev"),
+        ]
+        actual = text_to_textnodes(text)
+        self.assertListEqual(expected, actual)
+
+    def test_text_to_textnodes_empty(self):
+        text = ""
+        expected = []
+        actual = text_to_textnodes(text)
+        self.assertListEqual(expected, actual)
+
+    def test_text_to_textnoodes_plaintext(self):
+        text = "this is just some plain text."
+        expected = [TextNode(text, TextType.TEXT)]
+        actual = text_to_textnodes(text)
+        self.assertListEqual(expected, actual)
+
+    def test_text_to_textnoodes_bolded(self):
+        text = "**this text is all bolded!**"
+        expected = [TextNode("this text is all bolded!", TextType.BOLD)]
+        actual = text_to_textnodes(text)
+        self.assertListEqual(expected, actual)
+
+    def test_text_to_textnoodes_image_only(self):
+        text = "![obi wan image](https://i.imgur.com/fJRm4Vk.jpeg)"
+        expected = [TextNode("obi wan image", TextType.IMAGE, "https://i.imgur.com/fJRm4Vk.jpeg")]
+        actual = text_to_textnodes(text)
         self.assertListEqual(expected, actual)
 
 if __name__ == "__main__":
