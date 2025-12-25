@@ -1,6 +1,8 @@
 import unittest
 
-from markdown import split_nodes_delimiter, extract_markdown_images, extract_markdown_links, split_nodes_image, split_nodes_link, text_to_textnodes
+from markdown import split_nodes_delimiter, extract_markdown_images, extract_markdown_links,\
+      split_nodes_image, split_nodes_link, text_to_textnodes, markdown_to_blocks, \
+      block_to_block_type, BlockType
 from textnode import TextNode, TextType
 
 class TestHTMLNode(unittest.TestCase):
@@ -179,6 +181,94 @@ class TestHTMLNode(unittest.TestCase):
         expected = [TextNode("obi wan image", TextType.IMAGE, "https://i.imgur.com/fJRm4Vk.jpeg")]
         actual = text_to_textnodes(text)
         self.assertListEqual(expected, actual)
+
+    def test_markdown_to_blocks_multiple_blocks(self):
+        md = """
+This is **bolded** paragraph
+
+This is another paragraph with _italic_ text and `code` here
+This is the same paragraph on a new line
+
+- This is a list
+- with items
+"""
+        expected = [
+                "This is **bolded** paragraph",
+                "This is another paragraph with _italic_ text and `code` here\nThis is the same paragraph on a new line",
+                "- This is a list\n- with items",
+            ]
+        actual = markdown_to_blocks(md)
+        self.assertEqual(expected, actual)
+
+    def test_markdown_to_blocks_single_block(self):
+        md = """
+This block of text spans multiple lines but
+is considered a single block because there are no empty lines between.
+
+"""
+
+        expected = ["This block of text spans multiple lines but\nis considered a single block because there are no empty lines between."]
+        actual = markdown_to_blocks(md)
+        self.assertListEqual(expected, actual)
+
+    def test_markdown_to_blocks_no_blocks(self):
+        md = """
+
+
+"""
+        expected = []
+        actual = markdown_to_blocks(md)
+
+        self.assertListEqual(expected, actual)
+
+
+    def test_block_to_type_paragraph(self):
+        block = "Plaintext without any special characters is treated as a basic paragraph.\nEven if it spans multiple lines."
+
+        result = block_to_block_type(block)
+        self.assertEqual(BlockType.PARAGRAPH, result)
+
+    def test_block_to_type_heading(self):
+        block = "# Headings start with a hash symbol (#)."
+
+        result = block_to_block_type(block)
+        self.assertEqual(BlockType.HEADING, result)
+
+    def test_block_to_type_code(self):
+        block = "```This is a code block\nbecause its surrounded by triple-backtick characters (```).```"
+
+        result = block_to_block_type(block)
+        self.assertEqual(BlockType.CODE, result)
+
+    def test_block_to_type_heading(self):
+        block = "> Quotes start with the greater than symbol (>)."
+
+        result = block_to_block_type(block)
+        self.assertEqual(BlockType.QUOTE, result)
+
+    def test_block_to_type_unordered_single_item(self):
+        block = "- this is a single item unordered list."
+
+        result = block_to_block_type(block)
+        self.assertEqual(BlockType.UNORDERED_LIST, result)
+
+    def test_block_to_type_unordered_multi_item(self):
+        block = "- this is an unordered list.\n - with multiple items."
+
+        result = block_to_block_type(block)
+        self.assertEqual(BlockType.UNORDERED_LIST, result)
+
+    def test_block_to_type_ordered_single_item(self):
+        block = " 0. note that ordered lists don't always start at 1."
+
+        result = block_to_block_type(block)
+        self.assertEqual(BlockType.ORDERED_LIST, result)
+
+    def test_block_to_type_ordered_multi_item(self):
+        block = "1. this is an unordered list.\n 2. with multiple items."
+
+        result = block_to_block_type(block)
+        self.assertEqual(BlockType.ORDERED_LIST, result)  
 
 if __name__ == "__main__":
     unittest.main()    

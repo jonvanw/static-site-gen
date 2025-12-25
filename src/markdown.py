@@ -1,5 +1,14 @@
 import re
+from enum import Enum
 from textnode import TextNode, TextType
+
+class BlockType(Enum):
+    PARAGRAPH = "paragraph"
+    HEADING = "heading"
+    CODE = "code"
+    QUOTE = "quote"
+    UNORDERED_LIST = "unordered_list"
+    ORDERED_LIST = "ordered_list"
 
 def split_nodes_delimiter(old_nodes, delimiter, text_type):
     nodes = []
@@ -96,3 +105,45 @@ def text_to_textnodes(text):
     nodes = split_nodes_image(nodes)
     nodes = split_nodes_link(nodes)
     return nodes
+
+
+def markdown_to_blocks(markdown):
+    lines = markdown.splitlines()
+    blocks = []
+    current_block = ""
+    isNewBlock = True
+    for line in lines:
+        line = line.strip()
+        if line == "":
+            if current_block != "":
+                blocks.append(current_block)
+                current_block = ""
+            isNewBlock = True
+        else:
+            current_block += line if isNewBlock else f'\n{line}'
+            isNewBlock = False
+    
+    if current_block != "":
+        blocks.append(current_block)
+
+    return blocks
+
+def block_to_block_type(block):
+    block = block.strip()
+    if block.startswith("#"):
+        return BlockType.HEADING
+    if block.startswith(">"):
+        return BlockType.QUOTE
+    if block.startswith("```") and block.endswith("```"):
+        return BlockType.CODE
+    lines = block.splitlines()
+    lines = list(map(lambda line: line.strip(), lines))
+    if all(line.startswith('- ') for line in lines):
+        return BlockType.UNORDERED_LIST
+    
+    numbered_pattern = r'^\d+.'
+    if all(re.search(numbered_pattern, line) for line in lines):
+        return BlockType.ORDERED_LIST
+    
+    return BlockType.PARAGRAPH
+    
